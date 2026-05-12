@@ -1,0 +1,41 @@
+created: 20260511000000000
+modified: 20260511000000000
+rdt.order: 7
+rdt.plugin-key: mindmap-elixir
+rdt.plugin-name: mindmap elixir
+rdt.plugin-subtitle: mind-elixir engine adapter for rimir/mindmap
+rdt.section: TW internals
+title: $:/plugins/rimir/mindmap-elixir/doc/tw-internals
+type: text/vnd.tiddlywiki
+
+<$transclude $tiddler="$:/plugins/rimir/doc-template/templates/page">
+<$fill $name="body">
+
+!! How the IIFE bundle is loaded
+
+mind-elixir's `MindElixir.iife.js` is a self-executing function that, when evaluated, declares `var MindElixir = (function(W){...})({})` in the surrounding scope. TW's `require()` evaluates module text inside a closure that already has `module`, `exports`, `require` in scope; our trailer (`module.exports = MindElixir`) captures the local variable and re-exports it.
+
+This is why the `.meta` says `module-type: library` — it makes the file `require()`-able by the adapter without TW trying to interpret it as a widget or filter operator.
+
+!! Function-name override for engine discovery
+
+The host widget's `findEngineByName(name)` iterates registered `mindmapengine` modules and matches against `exports.name`. Our adapter exports a constructor function. JavaScript's `Function.prototype.name` is configurable in ES2015+, so we use `Object.defineProperty(Engine, "name", { value: "MindElixir" })` rather than direct assignment (which can silently fail in strict mode).
+
+!! mind-elixir mutates input data
+
+`me.init(data)` and `me.refresh(data)` both mutate the `data.nodeData` tree (mind-elixir attaches DOM references and internal flags). The adapter therefore deep-clones the composite MDOM before each call. Failing to clone would corrupt the host widget's cached composite and break orphan detection on the next change.
+
+!! Global keyboard listeners
+
+mind-elixir attaches `keydown` and `keyup` listeners on `document` when `keypress: true` (default). The adapter relies on mind-elixir's own `destroy()` method to release them; we wrap the call in try/catch since some versions throw if destroy is called without a prior init.
+
+!! TW auto-`<p>` wrapping
+
+`<$mindmap>` rendered via `<$transclude $mode="block">` may be wrapped in `<p>`. Our parent plugin's `styles.tid` includes `.rr-mindmap > p { display: contents }` to neutralise this, matching the cytoscape-engine pattern.
+
+!! Restricted-wiki environments
+
+Overlay writes go through the host widget's `overlay-store` and target the view's `mm.overlay` tiddler. If `llm-connect`-style restricted wiki blocks writes to that title, the adapter cannot detect the failure client-side. Document in your view's setup which overlay titles are in the allow filter.
+
+</$fill>
+</$transclude>

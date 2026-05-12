@@ -1,0 +1,58 @@
+created: 20260511000000000
+modified: 20260511000000000
+rdt.order: 4
+rdt.plugin-key: mindmap-elixir
+rdt.plugin-name: mindmap elixir
+rdt.plugin-subtitle: mind-elixir engine adapter for rimir/mindmap
+rdt.section: Examples
+title: $:/plugins/rimir/mindmap-elixir/doc/examples
+type: text/vnd.tiddlywiki
+
+<$transclude $tiddler="$:/plugins/rimir/doc-template/templates/page">
+<$fill $name="body">
+
+!! Quickest possible
+
+```
+<$mindmap filter="[tag[Knowledge]]" engine="MindElixir" overlay="$:/state/example/overlay" height="500"/>
+```
+
+The widget creates the overlay tiddler on first user gesture. Reload — the layout persists.
+
+!! Knowledge-app — single area, drag-friendly
+
+View tiddler `Demo/llm-mindmap`:
+
+```
+mm.producer:  knowledge-tree
+mm.args:      {"area":"llm"}
+mm.engine:    MindElixir
+mm.options:   {"direction":2, "draggable":true}
+mm.overlay:   $:/state/rimir/mindmap/views/demo-llm/overlay
+```
+
+Render:
+
+```
+<$mindmap view="Demo/llm-mindmap" height="600"/>
+```
+
+!! Without the toolbar / context menu
+
+For embedding in a small panel:
+
+```
+mm.options:   {"toolBar":false, "contextMenu":false, "keypress":false}
+```
+
+!! Verification (browser)
+
+# Install `rimir/mindmap` and `rimir/mindmap-elixir`. Restart.
+# Create the view tiddler above (or substitute another area id).
+# Open a tiddler containing `<$mindmap view="Demo/llm-mindmap" height="600"/>`.
+# A radial mindmap should render. The toolbar shows ``producer: knowledge-tree`` and ``engine: MindElixir``.
+# Drag a node onto a new parent. The overlay tiddler appears at `$:/state/rimir/mindmap/views/demo-llm/overlay` with an `op: "reparent"` entry.
+# Reload the wiki. The layout persists (read from the overlay on render).
+
+</$fill>
+</$transclude>

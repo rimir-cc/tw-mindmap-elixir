@@ -1,0 +1,49 @@
+created: 20260511000000000
+modified: 20260511000000000
+rdt.order: 6
+rdt.plugin-key: mindmap-elixir
+rdt.plugin-name: mindmap elixir
+rdt.plugin-subtitle: mind-elixir engine adapter for rimir/mindmap
+rdt.section: Dev workflow
+title: $:/plugins/rimir/mindmap-elixir/doc/dev-workflow
+type: text/vnd.tiddlywiki
+
+<$transclude $tiddler="$:/plugins/rimir/doc-template/templates/page">
+<$fill $name="body">
+
+!! Upgrading mind-elixir
+
+# Download `MindElixir.iife.js` and `MindElixir.css` from `https://unpkg.com/mind-elixir@<new-version>/dist/`.
+# Replace `lib/mind-elixir.umd.js` (the IIFE) — preserve the CommonJS trailer at the bottom:
+```
+;if(typeof module !== "undefined" && module.exports){module.exports=MindElixir;}
+```
+# Replace `lib/mind-elixir.css`.
+# Bump `version` in `plugin.info`. Add a `changelog.tid` entry.
+# Restart TiddlyWiki (library is a JS module).
+# Smoke test: open an existing `<$mindmap>`, verify it renders and `operation` events still produce ops.
+
+!! Adapter changes
+
+JS edits to `adapter.js` need a restart. The widget caches the engine class at module load — restart is required even for behaviour-only changes.
+
+!! Testing translation logic
+
+`Engine.prototype._handleOperation` is the translation surface. To unit-test:
+
+```
+var Engine = require("$:/plugins/rimir/mindmap-elixir/adapter.js");
+var e = new Engine($tw.wiki);
+var captured = [];
+e.on("op", function (op) { captured.push(op); });
+e.lastMdom = { root: { id: "r", children: [{ id: "a" }] } };
+e._handleOperation({ name: "finishEdit", obj: { id: "a", topic: "New A" } });
+// expect captured = [{ op: "rename", id: "a", label: "New A" }]
+```
+
+!! Adding plugin-install support (future)
+
+To allow users to install mind-elixir plugins like `nodeMenu` or `nodeMenuNeo`, extend `Engine.prototype.init` to read a `plugins` array from `options` and call `this.me.install(...)` for each. Document the expected shape in `settings.tid`.
+
+</$fill>
+</$transclude>

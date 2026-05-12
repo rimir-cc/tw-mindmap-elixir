@@ -1,0 +1,16 @@
+{
+    "title": "$:/plugins/rimir/mindmap-elixir",
+    "description": "mind-elixir engine adapter for rimir/mindmap",
+    "name": "mindmap elixir",
+    "author": "rimir",
+    "version": "0.2.0",
+    "core-version": ">=5.3.0",
+    "plugin-type": "plugin",
+    "dependents": [
+        "$:/plugins/rimir/mindmap"
+    ],
+    "soft-dependents": [
+        "$:/plugins/rimir/doc-template"
+    ],
+    "list": "readme documentation settings changelog license"
+}

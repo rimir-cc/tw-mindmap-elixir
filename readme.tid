@@ -1,0 +1,28 @@
+title: $:/plugins/rimir/mindmap-elixir/readme
+type: text/vnd.tiddlywiki
+
+! mindmap elixir
+
+[[mind-elixir|https://github.com/SSShooter/mind-elixir-core]] engine adapter for [[rimir/mindmap|$:/plugins/rimir/mindmap]]. Registers as a `module-type: mindmapengine` so any `<$mindmap>` widget can render via mind-elixir.
+
+!! Key features
+
+* ''Drop-in adapter'' — install alongside `rimir/mindmap`, select `MindElixir` as the default engine
+* ''Tree-native rendering'' — radial layout, expand/collapse, focus, drag with mind-elixir's defaults
+* ''Round-trip safe'' — unknown-namespace attrs (`mx:*`, `kn:*`, etc.) survive engine swaps
+* ''Bundled library'' — mind-elixir UMD + CSS shipped inside the plugin; no CDN or build step
+
+!! Prerequisites
+
+* `$:/plugins/rimir/mindmap`
+* TiddlyWiki 5.3.0+
+
+!! Quick start
+
+# Install both `rimir/mindmap` and this plugin.
+# Set `$:/config/rimir/mindmap/default-engine` to `MindElixir` (or leave empty — it's the only engine, the widget picks it up automatically).
+# Render any view: `<$mindmap view="MyView"/>`.
+
+!! Bundled version
+
+mind-elixir v5.11.0 (MIT-licensed). See `changelog` for upgrades.

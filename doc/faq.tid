@@ -1,0 +1,39 @@
+created: 20260511000000000
+modified: 20260511000000000
+rdt.order: 5
+rdt.plugin-key: mindmap-elixir
+rdt.plugin-name: mindmap elixir
+rdt.plugin-subtitle: mind-elixir engine adapter for rimir/mindmap
+rdt.section: FAQ
+title: $:/plugins/rimir/mindmap-elixir/doc/faq
+type: text/vnd.tiddlywiki
+
+<$transclude $tiddler="$:/plugins/rimir/doc-template/templates/page">
+<$fill $name="body">
+
+!! Why bundle mind-elixir instead of fetching from a CDN?
+
+Reliability and offline support. TiddlyWiki users frequently run wikis offline or behind firewalls. Bundling the library inside the plugin removes any network dependency and keeps the plugin self-contained for upload/share.
+
+!! Will icons render natively?
+
+mind-elixir doesn't have a first-class icon field. The adapter prepends `core:icon` (an emoji string) to the `topic` text. For colour-block icons or richer styling, future work could install a custom mind-elixir plugin via `me.install()`.
+
+!! Why is `applyOps` false in v1?
+
+mind-elixir's operation API isn't a 1:1 match for our Op vocabulary, and the cost of a full `refresh(data)` is tolerable at v5.11.0. Promoting `applyOps` to `true` requires careful mapping (e.g. `addNode` → `me.addChild(node, parent)`) and per-op error handling. Deferred until the v1 contract proves stable.
+
+!! Can I install a custom mind-elixir plugin (theme, plugin via `me.install()`)?
+
+Not yet through configuration. Until v0.2.x, the adapter does not expose a plugin-install hook. If you need this immediately, fork the adapter and add the `me.install(plugin)` calls in `Engine.prototype.init` after the `this.me = new MindElixirCtor(meOptions)` line.
+
+!! What about cross-links?
+
+The adapter passes `crossLinks` to mind-elixir as `linkData` for round-trip preservation, but mind-elixir's built-in cross-link rendering requires explicit `me.linkDiv()` calls and a specific data shape we don't yet emit fully. Cross-links are preserved but invisible in v0.1.0. Drawing them is on the roadmap.
+
+!! mind-elixir feels editable already — why does `capabilities.edit = false`?
+
+mind-elixir's inline editing emits `operation` events; we capture and route those into our overlay store, so technically gesture-based editing works. The flag is conservative: it tells the host widget not to assume the engine fully implements an "edit" surface API beyond op emission. The flag may flip to `true` once the contract is exercised.
+
+</$fill>
+</$transclude>

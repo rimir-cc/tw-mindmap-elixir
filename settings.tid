@@ -1,0 +1,35 @@
+title: $:/plugins/rimir/mindmap-elixir/settings
+type: text/vnd.tiddlywiki
+
+! Settings
+
+The mind-elixir engine has no user-configurable settings of its own beyond what the host `rimir/mindmap` plugin provides. Engine selection and view configuration happen at the host level:
+
+* ''Set as default engine'': `$:/config/rimir/mindmap/default-engine` → `MindElixir`
+* ''Per-view override'': set `mm.engine` to `MindElixir` on a view tiddler.
+* ''Per-widget override'': `<$mindmap engine="MindElixir" .../>`.
+
+!! Engine options
+
+A view tiddler's `mm.options` JSON object is passed through to mind-elixir as initialization options. Useful keys:
+
+|!Key |!Default |!Effect |
+|`direction` |`2` |0 = left, 1 = right, 2 = both |
+|`draggable` |`true` |Allow node drag-reparenting |
+|`contextMenu` |`true` |Show mind-elixir's built-in context menu |
+|`toolBar` |`true` |Show mind-elixir's built-in toolbar |
+|`keypress` |`true` |Bind keyboard shortcuts (Tab, Enter, etc.) — set `false` to avoid conflicts in restricted UIs |
+
+Example:
+
+```
+mm.options: {"direction":2,"draggable":true,"keypress":false}
+```
+
+See the [[mind-elixir documentation|https://docs.mind-elixir.com]] for the full option list.
+
+!! Bundled version
+
+|!Component |!Version |
+|mind-elixir-core |5.11.0 |
+|Adapter |0.1.0 |

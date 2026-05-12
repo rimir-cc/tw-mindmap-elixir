@@ -1,0 +1,45 @@
+created: 20260511000000000
+modified: 20260511000000000
+rdt.hub-category: visualization
+rdt.hub-category-name: Visualization & Layout
+rdt.hub-order: 21
+rdt.order: 1
+rdt.plugin-key: mindmap-elixir
+rdt.plugin-name: mindmap elixir
+rdt.plugin-subtitle: mind-elixir engine adapter for rimir/mindmap
+rdt.section: Overview
+title: $:/plugins/rimir/mindmap-elixir/doc/overview
+type: text/vnd.tiddlywiki
+
+<$transclude $tiddler="$:/plugins/rimir/doc-template/templates/page">
+<$fill $name="body">
+
+!! What it does
+
+`rimir/mindmap-elixir` is a `module-type: mindmapengine` adapter that lets `rimir/mindmap` render via [[mind-elixir|https://github.com/SSShooter/mind-elixir-core]] (MIT-licensed, ~85 KB minified). The bundled mind-elixir core is v5.11.0.
+
+!! Key features
+
+* ''Drop-in adapter'' — install alongside `rimir/mindmap`; no configuration required if it's the only engine installed.
+* ''Tree-native rendering'' — radial layout, expand/collapse, focus, drag, keyboard shortcuts.
+* ''Op translation'' — mind-elixir's `operation` bus events are translated into the canonical Op vocabulary and appended to the view's overlay tiddler.
+* ''Round-trip safe'' — unknown-namespace attrs (`mx:*`, `kn:*`, `cy:*`) survive the engine even when not rendered.
+* ''Bundled library'' — mind-elixir IIFE + CSS shipped inside the plugin; no CDN or build step required.
+
+!! What is mind-elixir?
+
+A modern, tree-native mindmap library by [[SSShooter|https://github.com/SSShooter]]:
+
+* MIT-licensed
+* Active development (v5.11.0 released April 2026)
+* Pluggable architecture with `me.install(plugin)`
+* Built-in themes, custom CSS variable overrides
+* Rich runtime API (`addChild`, `insertSibling`, `removeNode`, `bus.addListener("operation")`)
+
+!! Prerequisites
+
+* `$:/plugins/rimir/mindmap`
+* TiddlyWiki 5.3.0+
+
+</$fill>
+</$transclude>

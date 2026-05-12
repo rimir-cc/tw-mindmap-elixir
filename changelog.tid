@@ -1,0 +1,10 @@
+created: 20260511000000000
+modified: 20260511000000000
+title: $:/plugins/rimir/mindmap-elixir/changelog
+type: text/vnd.tiddlywiki
+
+! Changelog
+
+|!Version |!Date |!Changes |
+|v0.2.0 |2026-05-12 |Wires the structural-editing UX of `rimir/mindmap` v0.2: separate `nodeObj.icons` array so icon emoji don't leak into the editable topic; `setStructural`/`setSuspendOps` hooks; id-existence guard with new-node allowlist; finishEdit-of-placeholder → synthetic `addNode` op; F2 → `requestEditNode`; native delete-confirm; tooltips on nodes; suppression flag around `me.refresh()`+focus restore so cascade refreshes don't wipe the selection-driven preview pane |
+|v0.1.0 |2026-05-11 |Initial release. Bundles mind-elixir-core v5.11.0. Implements `mindmapengine` adapter with `capabilities.applyOps=false` (always full update). MDOM ↔ mind-elixir node-data mapping, deep-clone on input, global listener release in destroy() |

@@ -1,0 +1,67 @@
+created: 20260511000000000
+modified: 20260511000000000
+rdt.order: 3
+rdt.plugin-key: mindmap-elixir
+rdt.plugin-name: mindmap elixir
+rdt.plugin-subtitle: mind-elixir engine adapter for rimir/mindmap
+rdt.section: Reference
+title: $:/plugins/rimir/mindmap-elixir/doc/reference
+type: text/vnd.tiddlywiki
+
+<$transclude $tiddler="$:/plugins/rimir/doc-template/templates/page">
+<$fill $name="body">
+
+!! Engine identifier
+
+This adapter registers as `MindElixir`. Use this name in:
+
+* `$:/config/rimir/mindmap/default-engine`
+* `mm.engine` on view tiddlers
+* `engine="MindElixir"` on a `<$mindmap>` widget
+
+!! Engine options (passed via `mm.options`)
+
+|!Key |!Type |!Default |!Effect |
+|`direction` |0/1/2 |2 |0=LEFT, 1=RIGHT, 2=SIDE (both sides) |
+|`draggable` |boolean |true |Allow node drag-reparenting |
+|`contextMenu` |boolean |true |Show mind-elixir's right-click menu |
+|`toolBar` |boolean |true |Show mind-elixir's built-in toolbar |
+|`keypress` |boolean |true |Bind keyboard shortcuts (Tab=child, Enter=sibling, Delete=remove, F2=rename) |
+
+Additional mind-elixir options pass through verbatim. See [[mind-elixir docs|https://docs.mind-elixir.com]].
+
+Example view tiddler:
+
+```
+mm.producer:  knowledge-tree
+mm.args:      {"area":"llm"}
+mm.engine:    MindElixir
+mm.options:   {"direction":2, "draggable":true, "keypress":false}
+mm.overlay:   $:/state/rimir/mindmap/views/llm/overlay
+```
+
+!! Op translation table
+
+|!mind-elixir operation |!Emitted Op |!Notes |
+|`finishEdit` |`{ op: "rename", id, label }` |Emitted when the user finishes inline editing |
+|`removeNode` |`{ op: "removeNode", id }` |Explicit user delete |
+|`addChild` |`{ op: "addNode", parent, node }` |New node created in canvas |
+|`moveNode` |`{ op: "reparent", id, newParent }` |Drag-reparent |
+|`moveNodeBefore` |`{ op: "reparent", id, newParent }` |Drag-reorder before sibling |
+|`moveNodeAfter` |`{ op: "reparent", id, newParent }` |Drag-reorder after sibling |
+|`beginEdit`, `selectNode`, `expandNode` |(none) |Informational, no overlay write |
+|other |`{ op: "setAttr", id, key: "mx:lastOp", value: name }` |Round-trip preservation only |
+
+!! Public method surface
+
+|!Method |!Effect |
+|`init(element, mdom, options)` |Construct, mount, bind events |
+|`update(mdom)` |Replace data via mind-elixir's `refresh()` |
+|`focus(id)` |Select the node in mind-elixir |
+|`expand(id)` / `collapse(id)` |Toggle a branch |
+|`destroy()` |Remove listeners and DOM |
+|`on("op", fn)` |Subscribe to translated overlay ops |
+|`on("select", fn)` |Subscribe to selection events (fn receives node id) |
+
+</$fill>
+</$transclude>

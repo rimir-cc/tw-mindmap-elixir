@@ -1,0 +1,71 @@
+created: 20260511000000000
+modified: 20260511000000000
+rdt.order: 2
+rdt.plugin-key: mindmap-elixir
+rdt.plugin-name: mindmap elixir
+rdt.plugin-subtitle: mind-elixir engine adapter for rimir/mindmap
+rdt.section: Architecture
+title: $:/plugins/rimir/mindmap-elixir/doc/architecture
+type: text/vnd.tiddlywiki
+
+<$transclude $tiddler="$:/plugins/rimir/doc-template/templates/page">
+<$fill $name="body">
+
+!! Module shape
+
+```
+title: $:/plugins/rimir/mindmap-elixir/adapter.js
+type: application/javascript
+module-type: mindmapengine
+```
+
+Exports a constructor function (`module.exports = Engine`). The host widget calls `new Engine(wiki)` for each `<$mindmap>` instance. Function `name` is overridden to `MindElixir` via `Object.defineProperty` so the host's name-based discovery matches.
+
+!! Library bundling
+
+```
+lib/mind-elixir.umd.js     (mind-elixir IIFE + CommonJS shim; module-type: library)
+lib/mind-elixir.css        (mind-elixir stylesheet; $:/tags/Stylesheet)
+```
+
+The mind-elixir distribution ships an IIFE form (`MindElixir.iife.js`) which assigns `var MindElixir = (function(W){...})({})` inside the script body. We append a CommonJS export line so it works through TW's `require()` machinery:
+
+```js
+if (typeof module !== "undefined" && module.exports) { module.exports = MindElixir; }
+```
+
+!! MDOM ↔ mind-elixir mapping
+
+|!MDOM |!mind-elixir |
+|`id` |`id` (unchanged) |
+|`label` |`topic` (icon prefix appended when `core:icon` is set) |
+|`body` |`note` |
+|`attrs["core:color"]` |`style.background` |
+|`attrs["core:collapsed"]` |`expanded: false` |
+|`attrs["mx:tags"]` |`tags` |
+|`attrs["mx:hyperLink"]` |`hyperLink` |
+|`crossLinks` |`linkData` (preserved, not yet rendered) |
+
+Nodes with `attrs["core:hidden"] === true` are filtered out at the boundary; they don't appear in mind-elixir at all.
+
+!! Operation translation
+
+mind-elixir emits `operation` events via `me.bus.addListener("operation", fn)`. Each is translated into a single Op object and emitted to the host widget via `on("op", ...)`:
+
+|!mind-elixir |!Op |
+|`finishEdit` |`rename` |
+|`removeNode` |`removeNode` |
+|`addChild` |`addNode` (parent = `op.origin.id`) |
+|`moveNode` / `moveNodeBefore` / `moveNodeAfter` |`reparent` |
+|other |`setAttr` `mx:lastOp` (round-trip preserve) |
+
+!! Capabilities
+
+```
+{ applyOps: false, focus: true, expand: true, drag: true, edit: true }
+```
+
+`applyOps = false` in v1 — the widget always calls `engine.update(mdom)` after any change. mind-elixir's `refresh(data)` is used internally so this is reasonably cheap; promoting `applyOps` to `true` is a v2 optimisation.
+
+</$fill>
+</$transclude>

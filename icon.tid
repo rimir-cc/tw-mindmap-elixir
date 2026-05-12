@@ -1,0 +1,18 @@
+title: $:/plugins/rimir/mindmap-elixir/icon
+type: image/svg+xml
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="48" height="48">
+  <rect x="46" y="56" rx="6" ry="6" width="36" height="16" fill="#FFE7B5" stroke="#7A5A00" stroke-width="2"/>
+  <rect x="10" y="22" rx="5" ry="5" width="28" height="14" fill="#CFE6FF" stroke="#1F5FB0" stroke-width="2"/>
+  <rect x="10" y="92" rx="5" ry="5" width="28" height="14" fill="#CFE6FF" stroke="#1F5FB0" stroke-width="2"/>
+  <rect x="90" y="14" rx="5" ry="5" width="28" height="14" fill="#D4F1D4" stroke="#2E7A2E" stroke-width="2"/>
+  <rect x="90" y="40" rx="5" ry="5" width="28" height="14" fill="#D4F1D4" stroke="#2E7A2E" stroke-width="2"/>
+  <rect x="90" y="74" rx="5" ry="5" width="28" height="14" fill="#D4F1D4" stroke="#2E7A2E" stroke-width="2"/>
+  <rect x="90" y="100" rx="5" ry="5" width="28" height="14" fill="#D4F1D4" stroke="#2E7A2E" stroke-width="2"/>
+  <path d="M46 64 C 36 60, 30 40, 38 29" fill="none" stroke="#7A5A00" stroke-width="2.4"/>
+  <path d="M46 64 C 36 70, 30 90, 38 99" fill="none" stroke="#7A5A00" stroke-width="2.4"/>
+  <path d="M82 60 C 92 50, 90 30, 90 22" fill="none" stroke="#7A5A00" stroke-width="2.4"/>
+  <path d="M82 64 C 92 52, 90 50, 90 47" fill="none" stroke="#7A5A00" stroke-width="2.4"/>
+  <path d="M82 68 C 92 76, 90 80, 90 81" fill="none" stroke="#7A5A00" stroke-width="2.4"/>
+  <path d="M82 72 C 92 86, 90 102, 90 107" fill="none" stroke="#7A5A00" stroke-width="2.4"/>
+</svg>
