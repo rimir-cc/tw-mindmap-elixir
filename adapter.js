@@ -156,6 +156,11 @@ function Engine(wiki) {
     this._lastSelectedId = null;
     this._keydownHandler = null;
     this._structural = false;  // widget sets via setStructural; gates Tab/Enter intercept
+    // Host policy: when false, the adapter swallows Tab/Enter (and other
+    // native creation gestures) so the user can't accidentally produce
+    // placeholder nodes on a view that has no place to persist them. Default
+    // true — engine retains its native behavior.
+    this._allowNodeCreation = true;
 }
 
 Engine.prototype.name = ENGINE_NAME;
@@ -195,6 +200,15 @@ Engine.prototype.setSuspendOps = function (flag) {
 // has a chance to capture the user's label.
 Engine.prototype.setStructural = function (flag) {
     this._structural = !!flag;
+};
+
+// Host policy: when false, the adapter blocks native node-creation gestures
+// at the keydown capture-phase BEFORE mind-elixir's own handler runs. Used
+// by views whose producer cannot persist new nodes (e.g. grouped-tree, where
+// structural-volatile axis groupings have no tiddler-of-origin to inherit
+// from). The default is true; only setStructural-style adapters need this.
+Engine.prototype.setAllowNodeCreation = function (flag) {
+    this._allowNodeCreation = !!flag;
 };
 
 // Look up the parent id of a given node id in the cached MDOM. Used by the
@@ -285,7 +299,16 @@ Engine.prototype.init = function (element, mdom, options) {
     meOptions.el = element;
 
     this.me = new MindElixirCtor(meOptions);
-    this.me.init(toMEData(this.lastMdom));
+    // me.init can synchronously fire operation events (e.g. expandNode for
+    // any node whose initial state is collapsed). Suspend the bus during the
+    // bootstrap so they don't leak into the overlay store before any user
+    // gesture has happened.
+    this._suspendOpsDuringRefresh = true;
+    try {
+        this.me.init(toMEData(this.lastMdom));
+    } finally {
+        this._suspendOpsDuringRefresh = false;
+    }
     this._applyTooltips();
 
     var self = this;
@@ -323,29 +346,71 @@ Engine.prototype.init = function (element, mdom, options) {
             self._lastSelectedId = null;
             self._emit("select", null);
         });
+        // Collapse/expand. mind-elixir fires this as a TOP-LEVEL bus event
+        // (not under "operation"), with the affected nodeObj as the single
+        // argument. Its `.expanded` property reflects the new state. We
+        // translate to a `setAttr core:collapsed` op so the overlay store
+        // persists the change — otherwise collapse experiments vanish on
+        // the next refresh (engine state is rebuilt from base + overlay
+        // ops; if the op never made it into overlay, the producer's
+        // initial-collapsed config wins again).
+        this.me.bus.addListener("expandNode", function (nodeObj) {
+            if (self._suspendOps || self._suspendOpsDuringRefresh) { return; }
+            if (!nodeObj || !nodeObj.id) { return; }
+            // Drop stale ids (DOM-flight gestures during a cascade refresh).
+            if (self._idIndex && !self._idIndex[nodeObj.id]) { return; }
+            var collapsed = (nodeObj.expanded === false);
+            self._emit("op", {
+                op: "setAttr",
+                id: nodeObj.id,
+                key: "core:collapsed",
+                value: collapsed ? true : null   // null clears the attr
+            });
+        });
     }
 
-    // Document-level capture-phase keydown intercept: Tab → add child,
-    // Enter → add sibling. Capture fires before mind-elixir's own listener
-    // on its container; filtering by element-containment ensures we only
-    // intercept events that happened inside our mindmap canvas.
-    // Only active when the widget has called setStructural(true).
+    // Document-level capture-phase keydown intercept. Two distinct concerns:
+    //
+    //   1. F2 (structural views only) — open the full editor for the
+    //      selected node. mind-elixir's native F2 enters inline-rename which
+    //      bypasses our popup-edit-modal, so we preempt it.
+    //   2. Tab / Enter (when allowNodeCreation is false) — block mind-
+    //      elixir's native placeholder-creation path entirely. Used by
+    //      grouped-tree and other producers that have no way to persist a
+    //      new node (synthetic axis grouping has no tiddler of origin).
+    //
+    // Both branches share the same "are we eligible to intercept" prelude:
+    // event originated inside our canvas, not inside an editable widget,
+    // no modifier soup. The capture phase fires before mind-elixir's own
+    // listener, so preventDefault here wins.
     this._keydownHandler = function (ev) {
-        if (!self._structural) { return; }
         if (ev.defaultPrevented) { return; }
         // Only react to events that originated inside our canvas element.
         if (!self.element || !self.element.contains(ev.target)) { return; }
-        // Don't intercept while user is typing inside the input-box (rename).
+        // Don't intercept while user is typing inside the input-box (rename)
+        // or any other editable surface.
         if (ev.target && ev.target.id === "input-box") { return; }
         if (ev.target && ev.target.tagName === "INPUT") { return; }
         if (ev.target && ev.target.tagName === "TEXTAREA") { return; }
         if (ev.target && ev.target.isContentEditable) { return; }
-        // Only F2 is intercepted now — open the full editor for the selected
-        // node. Tab/Enter (add child/sibling) flow through mind-elixir's
-        // native placeholder + inline-edit; finishEdit emits addNode when
-        // the placeholder is confirmed.
-        if (ev.key !== "F2") { return; }
-        if (ev.shiftKey || ev.ctrlKey || ev.metaKey || ev.altKey) { return; }
+        var isPlainKey = !ev.shiftKey && !ev.ctrlKey && !ev.metaKey && !ev.altKey;
+        // Tab / Enter creation block: gated on allowNodeCreation, no structural
+        // requirement (the toggle is about whether the engine should respond
+        // to native creation gestures at all). Pressing the key with no
+        // selection still gets blocked — mind-elixir would otherwise create
+        // a root sibling.
+        if (!self._allowNodeCreation && isPlainKey && (ev.key === "Tab" || ev.key === "Enter")) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            if (typeof ev.stopImmediatePropagation === "function") {
+                ev.stopImmediatePropagation();
+            }
+            return;
+        }
+        // F2 → request-edit. Only meaningful on structural views; for non-
+        // structural the producer has no real tiddler to edit.
+        if (!self._structural) { return; }
+        if (ev.key !== "F2" || !isPlainKey) { return; }
         var selected = self._lastSelectedId;
         if (!selected && self.me && self.me.currentNode) {
             var cn = self.me.currentNode;
@@ -399,6 +464,16 @@ Engine.prototype._applyTooltips = function () {
             // had slides but no longer does (e.g. the last slide was deleted).
             el.removeAttribute("data-mm-has-slides");
         }
+        //   gt:leaf-count → data-mm-leaf-count="<N>"
+        //                   (descendant-leaf count for grouped-tree synthetic
+        //                    nodes; CSS renders it as " (N)" only while the
+        //                    node is collapsed, so the badge disappears once
+        //                    children are visible).
+        if (attrs["gt:leaf-count"] !== undefined && attrs["gt:leaf-count"] !== null) {
+            el.setAttribute("data-mm-leaf-count", String(attrs["gt:leaf-count"]));
+        } else if (el.hasAttribute && el.hasAttribute("data-mm-leaf-count")) {
+            el.removeAttribute("data-mm-leaf-count");
+        }
     });
 };
 
@@ -429,8 +504,32 @@ var NEW_NODE_OPS = {
 Engine.prototype._handleOperation = function (op) {
     if (!op) { return; }
     if (this._suspendOps) { return; }
+    // Internal during-refresh guard. Toggled by update() so the synthetic
+    // operation events mind-elixir replays as it rebuilds the DOM (e.g.
+    // expandNode for any node whose initial expanded=false in the data)
+    // don't loop back to our overlay store. Distinct from _suspendOps which
+    // the widget toggles externally around structural applyOps.
+    if (this._suspendOpsDuringRefresh) { return; }
     var name = op.name;
     var primary = op.obj || (op.objs && op.objs[0]) || null;
+    // Allow-node-creation veto: if the host disabled creation, drop any
+    // operation that creates new nodes (mind-elixir's context-menu "Add
+    // Child" / "Add Sibling" reach us this way, bypassing the keydown
+    // intercept). Reset the canvas to our last-known MDOM so any in-memory
+    // placeholder mind-elixir already produced disappears. finishEdit also
+    // arrives for a fresh placeholder confirmation — block it here too.
+    if (!this._allowNodeCreation && NEW_NODE_OPS[name]) {
+        if (this.me && typeof this.me.refresh === "function" && this.lastMdom) {
+            try {
+                this._suppressSelectEvents = true;
+                this.me.refresh(toMEData(this.lastMdom));
+                this._applyTooltips();
+            } finally {
+                this._suppressSelectEvents = false;
+            }
+        }
+        return;
+    }
     // Id-existence guard: if the primary node isn't in our last-known MDOM,
     // the gesture targets a stale DOM node from a redraw in flight. Drop the
     // op rather than emit it against a phantom id. Skip the guard for ops
@@ -525,7 +624,6 @@ Engine.prototype._handleOperation = function (op) {
             break;
         }
         case "beginEdit":
-        case "expandNode":
         case "selectNode":
             // Informational only.
             break;
@@ -548,8 +646,12 @@ Engine.prototype.update = function (mdom) {
         // down the DOM, AND our subsequent focus() to restore the prior
         // selection fires selectNodes — both would propagate to consumer
         // listeners and clobber their state (e.g. clear the preview's
-        // edit-mode on every keystroke). Suppress the entire window.
+        // edit-mode on every keystroke). Suppress the entire window. Also
+        // suppress operation events: refresh() may replay expandNode for any
+        // node whose initial state is collapsed, which would loop back to
+        // the overlay store via setAttr.
         this._suppressSelectEvents = true;
+        this._suspendOpsDuringRefresh = true;
         try {
             this.me.refresh(data);
             this._applyTooltips();
@@ -558,6 +660,7 @@ Engine.prototype.update = function (mdom) {
             }
         } finally {
             this._suppressSelectEvents = false;
+            this._suspendOpsDuringRefresh = false;
         }
     } else {
         // Fallback: tear down and re-init.

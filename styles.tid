@@ -22,3 +22,20 @@ type: text/vnd.tiddlywiki
 .rr-mindmap-slides-only-active me-tpc[data-mm-has-slides="yes"] {
     box-shadow: 0 0 0 2px <<colour primary>>;
 }
+
+/* Leaf-count badge for grouped-tree synthetic nodes. The producer emits
+   gt:leaf-count on chains/groups; the adapter forwards it as data-mm-leaf-count
+   on each <me-tpc>. Rendered as " (N)" via a pseudo-element so we don't have
+   to bake counts into the editable label. The :has() rule suppresses the
+   badge when the parent has an `me-epd.minus` expander — which mind-elixir
+   only applies to EXPANDED nodes. Result: badge appears only while a node
+   is collapsed, vanishes once its children are visible. */
+me-tpc[data-mm-leaf-count]::after {
+    content: " (" attr(data-mm-leaf-count) ")";
+    color: <<colour muted-foreground>>;
+    font-size: 0.85em;
+    margin-left: 0.3em;
+}
+me-parent:has(> me-epd.minus) > me-tpc[data-mm-leaf-count]::after {
+    content: none;
+}
