@@ -378,14 +378,27 @@ Engine.prototype._applyTooltips = function () {
     if (!this.lastMdom || !this.lastMdom.root) { return; }
     var me = this.me;
     walkMdom(this.lastMdom.root, function (n) {
-        var tip = n.attrs && n.attrs["core:tooltip"];
-        if (!tip) { return; }
+        var attrs = n.attrs || {};
         var el;
         try { el = me.findEle(n.id); } catch (e) { return; }
         if (!el) { return; }
         // findEle returns the me-tpc element directly (mind-elixir v5.11);
         // setting title on it puts the tooltip on the topic bubble.
-        el.setAttribute("title", tip);
+        if (attrs["core:tooltip"]) {
+            el.setAttribute("title", attrs["core:tooltip"]);
+        }
+        // Forward mindmap-namespace decoration attrs to data-* on the DOM so
+        // wiki-level CSS can style without engine-specific knowledge.
+        //   mm:has-slides → data-mm-has-slides="yes"
+        //                   (used by slides-only mode to highlight nodes that
+        //                    own slides directly vs. ancestors that don't)
+        if (attrs["mm:has-slides"]) {
+            el.setAttribute("data-mm-has-slides", "yes");
+        } else if (el.hasAttribute && el.hasAttribute("data-mm-has-slides")) {
+            // Clear stale attr left over from a previous render where this node
+            // had slides but no longer does (e.g. the last slide was deleted).
+            el.removeAttribute("data-mm-has-slides");
+        }
     });
 };
 
