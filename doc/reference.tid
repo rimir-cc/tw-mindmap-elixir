@@ -52,6 +52,35 @@ mm.overlay:   $:/state/rimir/mindmap/views/llm/overlay
 |`beginEdit`, `selectNode`, `expandNode` |(none) |Informational, no overlay write |
 |other |`{ op: "setAttr", id, key: "mx:lastOp", value: name }` |Round-trip preservation only |
 
+!! Flag-attribute support
+
+The `rimir/mindmap` 0.2.13+ flag decorator stamps engine-specific `mx:*` attrs and the engine-neutral `mx:flags` / `mx:flag-classes` channels. The adapter translates them in two places:
+
+!!! In `toMENode()` → inline `style.*`
+
+|!MDOM attr |!mind-elixir style property |!Notes |
+|`mx:text-color` |`style.color` |Overrides the `core:color` auto-contrast colour |
+|`mx:font-weight` |`style.fontWeight` |Strings like `bold`, `600` |
+|`mx:font-style` |`style.fontStyle` |Typically `italic` |
+|`mx:text-transform` |`style.textTransform` |`uppercase` / `lowercase` / `capitalize` |
+|`mx:opacity` |`style.opacity` |`"0.5"` etc. |
+|`mx:border` |`style.outline` + `outlineOffset: 2px` |//Outline, not border// — the topic bubble's `border` is used for the focus ring |
+|`mx:font-size-scale` |`style.fontSize` as `<n>em` |E.g. `mx:font-size-scale: "1.2"` → `style.fontSize = "1.2em"` |
+|`mx:icons` |Prepended to `meNode.icons` |Pipe-separated glyphs (decorator-ordered DESCENDING priority); `core:icon` joins on the right |
+
+Empty / unset attrs do not pollute `meNode.style` — every branch guards on truthy value.
+
+!!! In `_applyTooltips()` → DOM `data-*` attrs
+
+|!MDOM attr |!DOM attribute |!Use |
+|`mx:flags` |`data-mm-flags` |Space-separated flag names. Match individual flags via `me-tpc[data-mm-flags~="name"]` |
+|`mx:flag-classes` |`data-mm-flag-classes` |Custom class tokens from `mm.flag-class` |
+|`core:synthetic` (=== `true`) |`data-mm-synthetic="yes"` |Distinguishes synthetic group nodes (chain/axis) from tiddler-backed leaves |
+
+The native `title=` attribute on each `<me-tpc>` is also driven from MDOM attrs: `_applyTooltips` joins the producer's `core:tooltip` and the flag-decorator's `mx:flag-tooltip` with a newline (core first, flag block below). If both are absent the attribute is removed, so empty hovers don't render an empty native bubble.
+
+Each is stamped only when the source attr is non-empty; the adapter clears stale attrs when a previously-flagged node no longer matches. CSS authors get the full token-list semantic without needing to know the engine's internal class structure.
+
 !! Public method surface
 
 |!Method |!Effect |

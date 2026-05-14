@@ -3,7 +3,7 @@
     "description": "mind-elixir engine adapter for rimir/mindmap",
     "name": "mindmap elixir",
     "author": "rimir",
-    "version": "0.2.2",
+    "version": "0.2.4",
     "core-version": ">=5.3.0",
     "plugin-type": "plugin",
     "dependents": [

@@ -81,15 +81,65 @@ function toMENode(mnode) {
         id: mnode.id,
         topic: mnode.label || ""
     };
-    if (attrs["core:icon"]) {
-        meNode.icons = [attrs["core:icon"]];
+    // Build the icon stack. Flag-driven decoration writes `mx:icons` as a
+    // pipe-separated list in descending-priority order (highest-priority
+    // glyph on the left). `core:icon` (the producer-emitted single icon)
+    // joins on the RIGHT so the producer's intrinsic icon never displaces
+    // the user-authored flag icons.
+    var iconStack = [];
+    if (attrs["mx:icons"]) {
+        var parts = String(attrs["mx:icons"]).split("|");
+        for (var ii = 0; ii < parts.length; ii++) {
+            var p = parts[ii];
+            if (p) { iconStack.push(p); }
+        }
     }
+    if (attrs["core:icon"]) { iconStack.push(attrs["core:icon"]); }
+    if (iconStack.length > 0) { meNode.icons = iconStack; }
     if (mnode.body) { meNode.note = mnode.body; }
     if (attrs["core:color"]) {
         meNode.style = meNode.style || {};
         meNode.style.background = attrs["core:color"];
         var fg = contrastingForeground(attrs["core:color"]);
         if (fg) { meNode.style.color = fg; }
+    }
+    // Flag-driven typography & decoration. Each block guards on non-empty
+    // so empty strings never pollute meNode.style — mind-elixir's renderer
+    // would otherwise serialise them into the inline style attribute.
+    if (attrs["mx:text-color"]) {
+        meNode.style = meNode.style || {};
+        // Overrides any auto-contrast colour the bg-driven branch chose.
+        meNode.style.color = attrs["mx:text-color"];
+    }
+    if (attrs["mx:font-weight"]) {
+        meNode.style = meNode.style || {};
+        meNode.style.fontWeight = attrs["mx:font-weight"];
+    }
+    if (attrs["mx:font-style"]) {
+        meNode.style = meNode.style || {};
+        meNode.style.fontStyle = attrs["mx:font-style"];
+    }
+    if (attrs["mx:text-transform"]) {
+        meNode.style = meNode.style || {};
+        meNode.style.textTransform = attrs["mx:text-transform"];
+    }
+    if (attrs["mx:opacity"] !== undefined && attrs["mx:opacity"] !== null && attrs["mx:opacity"] !== "") {
+        meNode.style = meNode.style || {};
+        meNode.style.opacity = String(attrs["mx:opacity"]);
+    }
+    if (attrs["mx:font-size-scale"]) {
+        meNode.style = meNode.style || {};
+        // Mind-elixir applies its own base size; an `em` multiplier keeps the
+        // rule independent of the theme's chosen pixel size.
+        meNode.style.fontSize = String(attrs["mx:font-size-scale"]) + "em";
+    }
+    if (attrs["mx:border"]) {
+        meNode.style = meNode.style || {};
+        // `outline` rather than `border` — the topic bubble already uses
+        // `border` for its focus ring; using outline keeps our decoration
+        // additive instead of clobbering the engine's chrome.
+        meNode.style.outline = String(attrs["mx:border"]);
+        meNode.style.outlineOffset = "2px";
     }
     if (attrs["mx:tags"]) { meNode.tags = attrs["mx:tags"]; }
     if (attrs["mx:hyperLink"]) { meNode.hyperLink = attrs["mx:hyperLink"]; }
@@ -449,8 +499,17 @@ Engine.prototype._applyTooltips = function () {
         if (!el) { return; }
         // findEle returns the me-tpc element directly (mind-elixir v5.11);
         // setting title on it puts the tooltip on the topic bubble.
-        if (attrs["core:tooltip"]) {
-            el.setAttribute("title", attrs["core:tooltip"]);
+        // Combine producer-emitted core:tooltip with flag-decoration tooltips
+        // (one line per matching rule that declared mm.flag-tooltip). Order:
+        // structural info first, decoration second — so hovers feel "node
+        // summary, then state".
+        var tipParts = [];
+        if (attrs["core:tooltip"]) { tipParts.push(String(attrs["core:tooltip"])); }
+        if (attrs["mx:flag-tooltip"]) { tipParts.push(String(attrs["mx:flag-tooltip"])); }
+        if (tipParts.length > 0) {
+            el.setAttribute("title", tipParts.join("\n"));
+        } else if (el.hasAttribute && el.hasAttribute("title")) {
+            el.removeAttribute("title");
         }
         // Forward mindmap-namespace decoration attrs to data-* on the DOM so
         // wiki-level CSS can style without engine-specific knowledge.
@@ -473,6 +532,35 @@ Engine.prototype._applyTooltips = function () {
             el.setAttribute("data-mm-leaf-count", String(attrs["gt:leaf-count"]));
         } else if (el.hasAttribute && el.hasAttribute("data-mm-leaf-count")) {
             el.removeAttribute("data-mm-leaf-count");
+        }
+        //   mx:flags → data-mm-flags="<space-separated>"
+        //              CSS hook for flag-driven styling. Token-list matching
+        //              with [data-mm-flags~="name"] keeps individual flags
+        //              independently selectable. Absent when no rule matches
+        //              (rather than empty-string) so [data-mm-flags] selectors
+        //              don't false-positive.
+        if (attrs["mx:flags"]) {
+            el.setAttribute("data-mm-flags", String(attrs["mx:flags"]));
+        } else if (el.hasAttribute && el.hasAttribute("data-mm-flags")) {
+            el.removeAttribute("data-mm-flags");
+        }
+        //   mx:flag-classes → data-mm-flag-classes="<space-separated>"
+        //                     Custom class tokens contributed by individual
+        //                     flag rules. Author-controlled escape hatch.
+        if (attrs["mx:flag-classes"]) {
+            el.setAttribute("data-mm-flag-classes", String(attrs["mx:flag-classes"]));
+        } else if (el.hasAttribute && el.hasAttribute("data-mm-flag-classes")) {
+            el.removeAttribute("data-mm-flag-classes");
+        }
+        //   core:synthetic → data-mm-synthetic="yes"
+        //                    Distinguishes grouped-tree chain/axis nodes from
+        //                    tiddler-backed leaves so CSS can tone aggregated
+        //                    flags down (e.g. show only the icon, suppress
+        //                    border) without affecting leaf-level styling.
+        if (attrs["core:synthetic"] === true) {
+            el.setAttribute("data-mm-synthetic", "yes");
+        } else if (el.hasAttribute && el.hasAttribute("data-mm-synthetic")) {
+            el.removeAttribute("data-mm-synthetic");
         }
     });
 };
@@ -727,3 +815,7 @@ Engine.prototype.destroy = function () {
 Object.defineProperty(Engine, "name", { value: ENGINE_NAME, configurable: true });
 Engine.capabilities = Engine.prototype.capabilities;
 module.exports = Engine;
+// Test-only: pure translation helper, surfaced for unit tests so the MDOM →
+// mind-elixir mapping for flag attrs can be pinned without bootstrapping the
+// full engine instance + canvas.
+module.exports._toMENode = toMENode;

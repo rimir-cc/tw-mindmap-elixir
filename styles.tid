@@ -39,3 +39,31 @@ me-tpc[data-mm-leaf-count]::after {
 me-parent:has(> me-epd.minus) > me-tpc[data-mm-leaf-count]::after {
     content: none;
 }
+
+/* Flag-decoration DOM hooks (rimir/mindmap 0.2.13+).
+
+   The mindmap widget's flag decorator stamps three companion data attrs the
+   adapter mirrors onto each <me-tpc>:
+
+     data-mm-flags        — space-separated token list of matching flag names.
+                            Pick out individual flags with the ~= matcher:
+                              me-tpc[data-mm-flags~="overdue"] { ... }
+     data-mm-flag-classes — author-supplied custom classes via mm.flag-class.
+                            Used as a CSS escape hatch when the schema doesn't
+                            cover a desired effect.
+     data-mm-synthetic    — present only on grouped-tree chain/axis nodes (and
+                            knowledge-tree synthetic roots). Lets CSS tone
+                            aggregated flags down on ancestors:
+                              me-tpc[data-mm-flags~="overdue"][data-mm-synthetic="yes"] {
+                                  text-transform: none;
+                              }
+
+   First-class typography (mx:font-weight / mx:opacity / etc.) lands as inline
+   style.* via toMENode() — no CSS needed for the common case.
+
+   A short transition softens flag-state changes (e.g. a task moving in/out of
+   the "overdue" bucket). Kept narrow so it doesn't fight mind-elixir's own
+   selection / hover animations. */
+me-tpc {
+    transition: outline 120ms ease-out, opacity 120ms ease-out;
+}
