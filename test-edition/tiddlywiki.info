@@ -1,0 +1,11 @@
+{
+    "description": "Test edition for mindmap-elixir",
+    "plugins": [
+        "tiddlywiki/jasmine",
+        "rimir/mindmap-elixir"
+    ],
+    "themes": [
+        "tiddlywiki/vanilla",
+        "tiddlywiki/snowwhite"
+    ]
+}
