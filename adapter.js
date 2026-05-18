@@ -562,6 +562,26 @@ Engine.prototype._applyTooltips = function () {
         } else if (el.hasAttribute && el.hasAttribute("data-mm-synthetic")) {
             el.removeAttribute("data-mm-synthetic");
         }
+        //   mm:label-status → data-mm-label-status="undefined"
+        //                     Stamped by the producer when the chosen label
+        //                     field has no value. CSS uses it to surface a
+        //                     muted secondary line (the leaf-segment title)
+        //                     above the "UNDEFINED" topic.
+        if (attrs["mm:label-status"]) {
+            el.setAttribute("data-mm-label-status", String(attrs["mm:label-status"]));
+        } else if (el.hasAttribute && el.hasAttribute("data-mm-label-status")) {
+            el.removeAttribute("data-mm-label-status");
+        }
+        //   mm:label-fallback-title → data-mm-fallback-title="<leaf segment>"
+        //                             The would-have-been label when the
+        //                             chosen field is empty. Rendered as a
+        //                             ::before pseudo-element so the editable
+        //                             topic text stays clean.
+        if (attrs["mm:label-fallback-title"]) {
+            el.setAttribute("data-mm-fallback-title", String(attrs["mm:label-fallback-title"]));
+        } else if (el.hasAttribute && el.hasAttribute("data-mm-fallback-title")) {
+            el.removeAttribute("data-mm-fallback-title");
+        }
     });
 };
 

@@ -67,3 +67,20 @@ me-parent:has(> me-epd.minus) > me-tpc[data-mm-leaf-count]::after {
 me-tpc {
     transition: outline 120ms ease-out, opacity 120ms ease-out;
 }
+
+/* UNDEFINED-label fallback. When the chosen label-field is empty the producer
+   stamps mm:label-status="undefined" + mm:label-fallback-title=<leaf segment>;
+   the adapter forwards both onto the topic element. The pseudo-element is
+   pointer-events:none so it doesn't interfere with mind-elixir's contenteditable
+   behaviour, and the topic text itself ("UNDEFINED") remains the only editable
+   content. */
+me-tpc[data-mm-label-status="undefined"][data-mm-fallback-title]::before {
+    content: attr(data-mm-fallback-title);
+    display: block;
+    font-size: 0.7em;
+    line-height: 1.1;
+    opacity: 0.55;
+    font-weight: normal;
+    pointer-events: none;
+    margin-bottom: 2px;
+}
